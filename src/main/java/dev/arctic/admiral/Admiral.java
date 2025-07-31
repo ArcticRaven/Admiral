@@ -1,19 +1,23 @@
 package dev.arctic.admiral;
 
 import dev.arctic.admiral.alliance.roles.RoleManager;
-import dev.arctic.admiral.alliance.AdmiralLogger;
+import dev.arctic.admiral.external.commands.SlashCommands;
 import dev.arctic.admiral.utilities.ConsoleListener;
+import dev.arctic.admiral.utilities.GenericEvents;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class Admiral {
 
     public static JDA api;
     public static boolean isOperational;
+    public static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public static void main(String[] args) throws InterruptedException {
 
@@ -42,17 +46,21 @@ public class Admiral {
         api = JDABuilder.createDefault(args[0])
                 .enableIntents(intents)
                 .setMemberCachePolicy(MemberCachePolicy.ALL)
-                .addEventListeners(new RoleManager())
+                .addEventListeners(new RoleManager(), new SlashCommands(), new GenericEvents())
                 .build();
 
+        System.out.println("Admiral-chan is now initializing...waiting ready");
+
         api.awaitReady();
+        System.out.println("Starting console listener...");
         ConsoleListener.startConsoleListener();
+        System.out.println("Listener is active, Admiral-chan is now operational!");
     }
 
     public static void shutdown() throws InterruptedException {
-        AdmiralLogger.log("Admiral-chan is now shutting down!", AdmiralLogger.LogLevel.FINE);
         ConsoleListener.stopConsoleListener();
-        api.shutdown();
+        scheduler.shutdownNow();
+        if (api != null) api.shutdownNow();
         System.exit(0);
     }
 }

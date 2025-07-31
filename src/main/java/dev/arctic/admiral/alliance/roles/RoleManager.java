@@ -7,7 +7,6 @@ import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static dev.arctic.admiral.alliance.AllianceGuild.ROLE_IDS;
@@ -35,54 +34,57 @@ public class RoleManager extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
+        String cmd = event.getName();
+        if (!Set.of("addmember", "kickmember", "addstaff", "kickstaff", "addofficer", "kickofficer").contains(cmd)) return;
+
+        Member sender = event.getMember();
+        if (sender == null) return;
+
+        System.out.println("[DEBUG] Received command: " + cmd + " from user: " + sender.getIdLong());
+
+        boolean isGuildLeader = hasAnyRole(sender, "GUILD_LEADER");
+        boolean isR4 = hasAnyRole(sender, "R4");
+
+        // NEW: check for any *_L role
+        boolean isTagStaff = hasAnyRole(sender, "SNTL_L", "DERPZ_L", "BEGR_L", "MPZ_L");
+
+        // Allow tag staff to run addmember/kickmember only
+        if (!isGuildLeader && !isR4 && !(isTagStaff && (cmd.equals("addmember") || cmd.equals("kickmember")))) {
+            System.out.println("[DEBUG] Permission denied: insufficient rank.");
+            event.reply("You must be a Guild Leader, R4, or Tag Staff to use this command.").setEphemeral(true).queue();
+            return;
+        }
+
+        if ((cmd.equals("addofficer") || cmd.equals("kickofficer")) && !isGuildLeader) {
+            System.out.println("[DEBUG] Permission denied: not Guild Leader for officer command.");
+            event.reply("Only Guild Leaders can manage officers.").setEphemeral(true).queue();
+            return;
+        }
+
+        // Defer reply after permission checks
         event.deferReply(true).queue(hook -> {
-            Member sender = event.getMember();
-            String cmd = event.getName();
+            System.out.println("[DEBUG] Handling member-based command: " + cmd);
 
-            System.out.println("[DEBUG] Received command: " + cmd + " from user: " + sender.getIdLong());
+            Member target = Optional.ofNullable(event.getOption("member"))
+                    .map(OptionMapping::getAsMember)
+                    .orElse(null);
 
-            boolean isGuildLeader = hasAnyRole(sender, "GUILD_LEADER");
-            boolean isR4 = hasAnyRole(sender, "R4");
-
-            if (Set.of("addmember", "kickmember", "addstaff", "kickstaff", "addofficer", "kickofficer").contains(cmd)) {
-                if (!isGuildLeader && !isR4) {
-                    System.out.println("[DEBUG] Permission denied: not Guild Leader or R4.");
-                    respondEvent(event, false, "You must be a Guild Leader or R4 to use this command.");
-                    return;
-                }
-                if ((cmd.equals("addofficer") || cmd.equals("kickofficer")) && !isGuildLeader) {
-                    System.out.println("[DEBUG] Permission denied: not Guild Leader for officer command.");
-                    respondEvent(event, false, "Only Guild Leaders can manage officers.");
-                    return;
-                }
+            if (target == null) {
+                System.out.println("[DEBUG] No member option provided.");
+                hook.sendMessage("You must specify a member.").setEphemeral(true).queue();
+                return;
             }
 
             switch (cmd) {
-                case "addmember", "kickmember", "addstaff", "kickstaff", "addofficer", "kickofficer" -> {
-                    System.out.println("[DEBUG] Handling member-based command: " + cmd);
-                    Member target = Optional.ofNullable(event.getOption("member"))
-                            .map(OptionMapping::getAsMember)
-                            .orElse(null);
-                    if (target == null) {
-                        System.out.println("[DEBUG] No member option provided.");
-                        event.getHook().sendMessage("You must specify a member.").setEphemeral(true).queue();
-                        return;
-                    }
-
-                    switch (cmd) {
-                        case "addmember" -> manageMember(event, sender, target, true);
-                        case "kickmember" -> manageMember(event, sender, target, false);
-                        case "addstaff" -> manageStaff(event, sender, target, true);
-                        case "kickstaff" -> manageStaff(event, sender, target, false);
-                        case "addofficer" -> manageOfficer(event, sender, target, true, true);
-                        case "kickofficer" -> {
-                            boolean retain = event.getOption("staff") != null && event.getOption("staff").getAsBoolean();
-                            manageOfficer(event, sender, target, false, retain);
-                        }
-                    }
+                case "addmember" -> manageMember(event, sender, target, true);
+                case "kickmember" -> manageMember(event, sender, target, false);
+                case "addstaff" -> manageStaff(event, sender, target, true);
+                case "kickstaff" -> manageStaff(event, sender, target, false);
+                case "addofficer" -> manageOfficer(event, sender, target, true, true);
+                case "kickofficer" -> {
+                    boolean retain = event.getOption("staff") != null && event.getOption("staff").getAsBoolean();
+                    manageOfficer(event, sender, target, false, retain);
                 }
-
-                default -> System.out.println("[DEBUG] Unknown command: " + cmd);
             }
         });
     }

@@ -27,7 +27,7 @@ public class AllianceGuild {
     );
 
     public static void init() throws InterruptedException {
-        guild = api.getGuildById(1397596087207989359L);
+        guild = api.getGuildById(1365543107386671225L);
 
         if(guild == null){
             Admiral.shutdown();
@@ -36,6 +36,7 @@ public class AllianceGuild {
             AdmiralLogger.log("Admiral-chan is now operational!", AdmiralLogger.LogLevel.FINE);
         }
 
+        System.out.println("Registering commands...");
         guild.updateCommands().addCommands(
                 Commands.slash("addmember", "Adds a member to your guild.")
                         .addOption(OptionType.USER, "member", "the member to add to your guild"),
@@ -49,17 +50,7 @@ public class AllianceGuild {
                         .addOption(OptionType.USER, "member", "the member to promote add to R4 in the discord"),
                 Commands.slash("kickofficer", "the R4 to demote")
                         .addOption(OptionType.USER, "member", "the member to demote from R4 in the discord")
-                        .addOption(OptionType.BOOLEAN, "staff", "should this member remain staff in the guild"),
-                Commands.slash("ares", "changes the color of Ares's role")
-                        .addOption(OptionType.STRING, "hex", "Hex color code to set. ex. #ffffff")
+                        .addOption(OptionType.BOOLEAN, "staff", "should this member remain staff in the guild")
         ).queue();
-    }
-
-    public static long getGuildID(){
-        return guild.getIdLong();
-    }
-
-    public static Map<String, Long> getRoleIDs(){
-        return ROLE_IDS;
     }
 }
