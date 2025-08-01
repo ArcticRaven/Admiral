@@ -9,14 +9,18 @@ import java.util.concurrent.*;
 
 public class ChatScanner extends ListenerAdapter {
 
-    private static final BlockingQueue<ModerationTask> moderationQueue = new LinkedBlockingQueue<>();
+    private static final BlockingQueue<ModerationTask> moderationQueue = new LinkedBlockingQueue<>(1000);
     private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     static {
         scheduler.scheduleAtFixedRate(() -> {
-            ModerationTask task = moderationQueue.poll();
-            if (task != null) {
-                AIUtil.reviewMessage(task.userId, task.messageId, task.content);
+            try {
+                ModerationTask task = moderationQueue.poll();
+                if (task != null) {
+                    AIUtil.reviewMessage(task.userId(), task.channelId(), task.messageId(), task.content());
+                }
+            } catch (Exception e) {
+                System.err.println("[ChatScanner] Error during moderation task: " + e.getMessage());
             }
         }, 0, 250, TimeUnit.MILLISECONDS);
     }
@@ -26,17 +30,24 @@ public class ChatScanner extends ListenerAdapter {
         if (event.getAuthor().isBot()) return;
         if (!event.getGuild().equals(AllianceGuild.guild)) return;
 
-        String message = event.getMessage().getContentStripped();
-        moderationQueue.offer(new ModerationTask(
+        String content = event.getMessage().getContentStripped();
+        if (content.isBlank()) return;
+
+        boolean added = moderationQueue.offer(new ModerationTask(
                 event.getAuthor().getIdLong(),
+                event.getChannel().getIdLong(),
                 event.getMessageIdLong(),
-                message
+                content
         ));
+
+        if (!added) {
+            System.err.println("[ChatScanner] Moderation queue full. Message skipped.");
+        }
     }
 
-    private record ModerationTask(Long userId, Long messageId, String content) {}
+    private record ModerationTask(Long userId, Long channelId, Long messageId, String content) {}
 
     public static void shutdown() {
-        scheduler.shutdown();
+        scheduler.shutdownNow();
     }
 }

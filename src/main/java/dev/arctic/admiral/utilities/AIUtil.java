@@ -7,6 +7,8 @@ import com.openai.models.moderations.ModerationCreateParams;
 import com.openai.models.moderations.ModerationModel;
 import dev.arctic.admiral.Admiral;
 import dev.arctic.admiral.alliance.AllianceGuild;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.components.container.Container;
 import net.dv8tion.jda.api.components.container.ContainerChildComponent;
 import net.dv8tion.jda.api.components.separator.Separator;
@@ -23,10 +25,10 @@ public class AIUtil {
                 .build();
     }
 
-    public static void reviewMessage(Long userID, Long messageID, String message) {
+    public static void reviewMessage(Long userID, Long channelID, Long messageID, String message) {
         var createParams = ModerationCreateParams.builder()
                 .input(message)
-                .model(ModerationModel.TEXT_MODERATION_LATEST)
+                .model(ModerationModel.OMNI_MODERATION_LATEST)
                 .build();
 
         client.moderations().create(createParams).thenAccept(response -> {
@@ -74,7 +76,7 @@ public class AIUtil {
             }
 
             if (!violations.isEmpty()) {
-                notifyFlaggedContent(userID, messageID, violations);
+                notifyFlaggedContent(userID, channelID, messageID, message, violations);
             }
         }).exceptionally(err -> {
             err.printStackTrace();
@@ -82,13 +84,18 @@ public class AIUtil {
         });
     }
 
-    public static void notifyFlaggedContent(Long userID, Long messageID, Map<String, Boolean> violations) {
+    public static void notifyFlaggedContent(Long userID, Long channelID, Long messageID, String message, Map<String, Boolean> violations) {
         List<ContainerChildComponent> children = new ArrayList<>();
 
         children.add(TextDisplay.of("## Flagged Content from " +
                                     Admiral.api.getUserById(userID).getName()));
         children.add(Separator.createDivider(Separator.Spacing.SMALL));
-        children.add(TextDisplay.of("-# userId: " + userID + "\n-# messageId: " + messageID));
+        String safeMessage = message.length() > 1024 ? message.substring(0, 1021) + "..." : message;
+        children.add(TextDisplay.of("**Message:**\n" + safeMessage));
+        children.add(Separator.createDivider(Separator.Spacing.SMALL));
+        children.add(TextDisplay.of("-# userId: " + userID));
+        children.add(TextDisplay.of("-# channelId: " + channelID));
+        children.add(TextDisplay.of("-# messageId: " + messageID));
         children.add(Separator.createDivider(Separator.Spacing.SMALL));
 
         for (Map.Entry<String, Boolean> entry : violations.entrySet()) {
@@ -97,10 +104,19 @@ public class AIUtil {
             }
         }
 
+        children.add(
+                ActionRow.of(
+                        Button.primary("mod_delete", "Delete Message"),
+                        Button.danger("mod_both", "Shadow and Delete"),
+                        Button.secondary("mod_ignore", "Ignore")
+                )
+        );
+
+
+
         Container container = Container.of(children);
 
         Objects.requireNonNull(AllianceGuild.guild.getTextChannelById(1397596087207989359L)).sendMessageComponents(container).useComponentsV2().queue();
-        Objects.requireNonNull(AllianceGuild.guild.getTextChannelById(1397596087207989359L)).sendMessage("@here").queue();
     }
 }
 

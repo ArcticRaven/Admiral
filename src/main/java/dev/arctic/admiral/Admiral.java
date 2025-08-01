@@ -1,6 +1,7 @@
 package dev.arctic.admiral;
 
 import dev.arctic.admiral.alliance.moderation.ChatScanner;
+import dev.arctic.admiral.alliance.moderation.ModerationButtons;
 import dev.arctic.admiral.alliance.roles.RoleManager;
 import dev.arctic.admiral.external.commands.SlashCommands;
 import dev.arctic.admiral.utilities.AIUtil;
@@ -60,7 +61,8 @@ public class Admiral {
                 .addEventListeners(new RoleManager(),
                         new SlashCommands(),
                         new GenericEvents(),
-                        new ChatScanner())
+                        new ChatScanner(),
+                        new ModerationButtons())
                 .build();
 
         System.out.println("Admiral-chan is now initializing...waiting ready");
