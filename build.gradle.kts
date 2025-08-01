@@ -16,6 +16,8 @@ repositories {
 dependencies {
     implementation("net.dv8tion:JDA:$jdaVersion")
     implementation("ch.qos.logback:logback-classic:1.5.13")
+    implementation("org.tomlj:tomlj:1.1.1")
+    implementation("com.openai:openai-java:2.20.0")
 
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")

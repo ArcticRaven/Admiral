@@ -1,0 +1,22 @@
+[mysql]
+host = "127.0.0.1"
+port = 3306
+database = "admiral_db"
+username = "urmom"
+password = "peenits"
+
+[openai]
+key = "key"
+
+[openai.thresholds]
+hate = 0.5
+hate_threatening = 0.4
+harassment = 0.6
+harassment_threatening = 0.5
+self_harm = 0.4
+self_harm_intent = 0.3
+self_harm_instructions = 0.3
+sexual = 0.5
+sexual_minors = 0.2
+violence = 0.5
+violence_graphic = 0.4
