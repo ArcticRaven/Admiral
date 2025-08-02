@@ -116,7 +116,46 @@ public class AIUtil {
 
         Container container = Container.of(children);
 
-        Objects.requireNonNull(AllianceGuild.guild.getTextChannelById(1397596087207989359L)).sendMessageComponents(container).useComponentsV2().queue();
+        sendFinalMessage(container, channelID);
+    }
+
+    public static void sendFinalMessage(Container container, Long channelOrigin) {
+        Long targetChannelId = switch (channelOrigin) {
+            case Long id when Set.of(
+                    1393800319728746536L,
+                    1394143432007487522L,
+                    1366997865183842404L,
+                    1393801740394041374L
+            ).contains(id) -> 1394143432007487522L;
+
+            case Long id when Set.of(
+                    1393801008601235536L,
+                    1394143953024057536L,
+                    1366997368767119402L,
+                    1393802698461024256L
+            ).contains(id) -> 1394143953024057536L;
+
+            case Long id when Set.of(
+                    1393813220569125004L,
+                    1394144438586052638L,
+                    1393813530859409478L,
+                    1393813759646105630L
+            ).contains(id) -> 1394144438586052638L;
+
+            case Long id when Set.of(
+                    1393814064781856868L,
+                    1394144814961922058L,
+                    1393814724055142541L,
+                    1393815374491029655L
+            ).contains(id) -> 1394144814961922058L;
+
+            default -> 1397596087207989359L;
+        };
+
+        Objects.requireNonNull(AllianceGuild.guild.getTextChannelById(targetChannelId))
+                .sendMessageComponents(container)
+                .useComponentsV2()
+                .queue();
     }
 }
 

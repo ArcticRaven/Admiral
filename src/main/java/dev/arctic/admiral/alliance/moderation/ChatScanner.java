@@ -5,6 +5,7 @@ import dev.arctic.admiral.utilities.AIUtil;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
+import java.util.Set;
 import java.util.concurrent.*;
 
 public class ChatScanner extends ListenerAdapter {
